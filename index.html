@@ -6,14 +6,17 @@
   <title>Проверка авиабилета</title>
   <style>
     :root {
-      --ink: #142033;
+      --ink: #162033;
       --muted: #627084;
+      --line: rgba(22, 32, 51, 0.16);
       --blue: #1463d8;
       --blue-dark: #0d3f91;
       --ok: #117a48;
       --ok-bg: #eaf8ef;
       --bad: #b42318;
       --bad-bg: #fff0ed;
+      --paper: rgba(255, 255, 255, 0.9);
+      --paper-strong: rgba(255, 255, 255, 0.98);
       font-family: Inter, "Segoe UI", Arial, sans-serif;
     }
 
@@ -26,7 +29,6 @@
       margin: 0;
       color: var(--ink);
       background: #dcecf8 url("airplane-hero.png") center / cover no-repeat fixed;
-      overflow-x: hidden;
     }
 
     body::before {
@@ -87,7 +89,7 @@
     .checker {
       width: min(100%, 520px);
       padding: 20px;
-      background: rgba(255, 255, 255, 0.9);
+      background: var(--paper);
       border: 1px solid rgba(255, 255, 255, 0.7);
       border-radius: 8px;
       box-shadow: 0 24px 70px rgba(38, 66, 101, 0.22);
@@ -120,8 +122,8 @@
       font: inherit;
       font-size: 16px;
       font-weight: 650;
-      background: rgba(255, 255, 255, 0.98);
-      border: 1px solid rgba(22, 32, 51, 0.16);
+      background: var(--paper-strong);
+      border: 1px solid var(--line);
       border-radius: 8px;
       outline: none;
     }
@@ -180,6 +182,35 @@
       color: var(--bad);
       background: var(--bad-bg);
       border-color: rgba(180, 35, 24, 0.18);
+    }
+
+    .ticket-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+      color: var(--ink);
+    }
+
+    .meta-box {
+      padding: 11px 12px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(17, 122, 72, 0.14);
+      border-radius: 8px;
+    }
+
+    .meta-box span {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .meta-box b {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 14px;
     }
 
     .modal {
@@ -252,11 +283,6 @@
     }
 
     @media (max-width: 680px) {
-      main {
-        align-items: start;
-        padding: 24px 16px;
-      }
-
       body {
         background-position: 62% center;
       }
@@ -265,6 +291,11 @@
         background:
           linear-gradient(180deg, rgba(244, 249, 255, 0.95) 0%, rgba(244, 249, 255, 0.88) 48%, rgba(244, 249, 255, 0.52) 100%),
           linear-gradient(180deg, rgba(10, 37, 77, 0.16), rgba(255, 255, 255, 0.1));
+      }
+
+      main {
+        align-items: start;
+        padding: 24px 16px;
       }
 
       h1 {
@@ -286,6 +317,10 @@
 
       button {
         width: 100%;
+      }
+
+      .ticket-meta {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -315,7 +350,7 @@
         </form>
 
         <div id="result" class="result" role="status" aria-live="polite"></div>
-        <div class="foot">Статус показывается только для заданного номера билета.</div>
+        <div class="foot">Статус показывается только для заданных номеров билетов.</div>
       </div>
     </section>
   </main>
@@ -323,7 +358,7 @@
   <div id="ticketModal" class="modal" aria-hidden="true">
     <section class="ticket-window" role="dialog" aria-modal="true" aria-labelledby="ticket-title">
       <header>
-        <h2 id="ticket-title">Билет найден: 160459290045</h2>
+        <h2 id="ticket-title">Билет найден</h2>
         <button class="close-modal" type="button" aria-label="Закрыть билет" title="Закрыть билет">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
             <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -331,25 +366,36 @@
         </button>
       </header>
       <div class="ticket-frame">
-        <img src="ticket-photo.jpg" alt="Фотография найденного авиабилета">
+        <img id="ticketImage" src="" alt="Фотография найденного авиабилета">
       </div>
     </section>
   </div>
 
   <script>
-    const VALID_TICKET_NUMBER = "160459290045";
+    const tickets = {
+      "160459290045": {
+        image: "ticket-160459290045.jpg",
+        route: "Москва -> Стамбул -> Манчестер",
+        status: "Билет найден",
+        passenger: "SYLKINA SVETLANA"
+      }
+    };
 
     const form = document.querySelector("#ticketForm");
     const input = document.querySelector("#ticketNumber");
     const result = document.querySelector("#result");
     const ticketModal = document.querySelector("#ticketModal");
+    const ticketTitle = document.querySelector("#ticket-title");
+    const ticketImage = document.querySelector("#ticketImage");
     const closeModal = document.querySelector(".close-modal");
 
     function normalizeTicket(value) {
       return value.trim().replace(/\s+/g, "").toUpperCase();
     }
 
-    function openTicketModal() {
+    function openTicketModal(ticketNumber, ticket) {
+      ticketTitle.textContent = `Билет найден: ${ticketNumber}`;
+      ticketImage.src = ticket.image;
       ticketModal.classList.add("is-open");
       ticketModal.setAttribute("aria-hidden", "false");
       closeModal.focus();
@@ -360,13 +406,18 @@
       ticketModal.setAttribute("aria-hidden", "true");
     }
 
-    function renderFound(ticketNumber) {
+    function renderFound(ticketNumber, ticket) {
       result.className = "result found is-visible";
       result.innerHTML = `
         <strong>Билет найден</strong>
         <p>Номер ${ticketNumber} есть в системе.</p>
+        <div class="ticket-meta" aria-label="Детали билета">
+          <div class="meta-box"><span>Статус</span><b>${ticket.status}</b></div>
+          <div class="meta-box"><span>Маршрут</span><b>${ticket.route}</b></div>
+          <div class="meta-box"><span>Пассажир</span><b>${ticket.passenger}</b></div>
+        </div>
       `;
-      openTicketModal();
+      openTicketModal(ticketNumber, ticket);
     }
 
     function renderMissing(ticketNumber) {
@@ -381,9 +432,10 @@
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const enteredTicket = normalizeTicket(input.value);
+      const ticket = tickets[enteredTicket];
 
-      if (enteredTicket && enteredTicket === normalizeTicket(VALID_TICKET_NUMBER)) {
-        renderFound(VALID_TICKET_NUMBER);
+      if (ticket) {
+        renderFound(enteredTicket, ticket);
       } else {
         renderMissing(input.value.trim());
       }
