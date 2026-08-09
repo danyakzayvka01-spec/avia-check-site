@@ -222,6 +222,16 @@
       line-height: 1.5;
     }
 
+    .view-ticket-button {
+      justify-self: start;
+      min-width: 0;
+      height: 42px;
+      margin-top: 4px;
+      padding: 0 16px;
+      font-size: 14px;
+      box-shadow: none;
+    }
+
     .result.found {
       color: var(--ok);
       background: var(--ok-bg);
@@ -431,7 +441,7 @@
   <nav class="top-actions" aria-label="Действия администратора">
     <span id="adminStatus" class="admin-status" hidden></span>
     <button id="loginButton" type="button">Войти</button>
-    <button id="registerButton" class="register-button" type="button">Регистрация</button>
+    <button id="registerButton" class="register-button" type="button" onclick="document.getElementById('loginModal').classList.remove('is-open'); document.getElementById('loginModal').setAttribute('aria-hidden', 'true'); document.getElementById('registerModal').classList.add('is-open'); document.getElementById('registerModal').setAttribute('aria-hidden', 'false');">Регистрация</button>
     <button id="addTicketButton" class="add-ticket-button" type="button" hidden onclick="document.getElementById('addTicketModal').classList.add('is-open'); document.getElementById('addTicketModal').setAttribute('aria-hidden', 'false');">Добавить билет</button>
     <button id="logoutButton" class="logout-button" type="button" hidden>Выйти</button>
   </nav>
@@ -667,6 +677,7 @@
     }
 
     function openLoginModal() {
+      closeRegisterModal();
       loginForm.reset();
       loginMessage.textContent = "";
       loginMessage.className = "form-message";
@@ -679,6 +690,7 @@
     }
 
     function openRegisterModal() {
+      closeLoginModal();
       registerForm.reset();
       registerMessage.textContent = "";
       registerMessage.className = "form-message";
@@ -724,8 +736,12 @@
           <div class="meta-box"><span>Маршрут</span><b>${ticket.route}</b></div>
           <div class="meta-box"><span>Пассажир</span><b>${ticket.passenger}</b></div>
         </div>
+        <button id="viewTicketButton" class="view-ticket-button" type="button">Открыть фотографию билета</button>
       `;
-      openTicketModal(ticketNumber, ticket);
+      document.querySelector("#viewTicketButton").addEventListener("click", () => {
+        openTicketModal(ticketNumber, ticket);
+      });
+      closeTicketModal();
     }
 
     function renderMissing(ticketNumber) {
