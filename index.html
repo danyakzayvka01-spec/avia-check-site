@@ -222,16 +222,6 @@
       line-height: 1.5;
     }
 
-    .view-ticket-button {
-      justify-self: start;
-      min-width: 0;
-      height: 42px;
-      margin-top: 4px;
-      padding: 0 16px;
-      font-size: 14px;
-      box-shadow: none;
-    }
-
     .result.found {
       color: var(--ok);
       background: var(--ok-bg);
@@ -731,17 +721,8 @@
       result.innerHTML = `
         <strong>Билет найден</strong>
         <p>Номер ${ticketNumber} есть в системе.</p>
-        <div class="ticket-meta" aria-label="Детали билета">
-          <div class="meta-box"><span>Статус</span><b>${ticket.status}</b></div>
-          <div class="meta-box"><span>Маршрут</span><b>${ticket.route}</b></div>
-          <div class="meta-box"><span>Пассажир</span><b>${ticket.passenger}</b></div>
-        </div>
-        <button id="viewTicketButton" class="view-ticket-button" type="button">Открыть фотографию билета</button>
       `;
-      document.querySelector("#viewTicketButton").addEventListener("click", () => {
-        openTicketModal(ticketNumber, ticket);
-      });
-      closeTicketModal();
+      openTicketModal(ticketNumber, ticket);
     }
 
     function renderMissing(ticketNumber) {
