@@ -74,6 +74,13 @@
       background: linear-gradient(135deg, #117a48, #075e34);
     }
 
+    .top-actions .register-button {
+      color: var(--blue-dark);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(20, 99, 216, 0.34);
+      box-shadow: 0 10px 22px rgba(22, 32, 51, 0.12);
+    }
+
     .top-actions .logout-button {
       color: var(--ink);
       background: rgba(255, 255, 255, 0.92);
@@ -422,9 +429,10 @@
 </head>
 <body>
   <nav class="top-actions" aria-label="Действия администратора">
-    <span id="adminStatus" class="admin-status" hidden>Вы вошли как администратор</span>
+    <span id="adminStatus" class="admin-status" hidden></span>
     <button id="loginButton" type="button">Войти</button>
-    <button id="addTicketButton" class="add-ticket-button" type="button" hidden>Добавить билет</button>
+    <button id="registerButton" class="register-button" type="button">Регистрация</button>
+    <button id="addTicketButton" class="add-ticket-button" type="button" hidden onclick="document.getElementById('addTicketModal').classList.add('is-open'); document.getElementById('addTicketModal').setAttribute('aria-hidden', 'false');">Добавить билет</button>
     <button id="logoutButton" class="logout-button" type="button" hidden>Выйти</button>
   </nav>
 
@@ -475,8 +483,8 @@
 
   <div id="loginModal" class="modal" aria-hidden="true">
     <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title">
-      <h2 id="login-title">Вход для администратора</h2>
-      <p class="modal-lead">Введите данные администратора, чтобы управлять билетами.</p>
+      <h2 id="login-title">Вход</h2>
+      <p class="modal-lead">Войдите как пользователь или администратор.</p>
       <form id="loginForm">
         <label for="loginName">Логин</label>
         <input id="loginName" name="loginName" type="text" autocomplete="username" required>
@@ -484,6 +492,21 @@
         <input id="loginPassword" name="loginPassword" type="password" autocomplete="current-password" required>
         <button type="submit">Войти</button>
         <p id="loginMessage" class="form-message" role="alert"></p>
+      </form>
+    </section>
+  </div>
+
+  <div id="registerModal" class="modal" aria-hidden="true">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="register-title">
+      <h2 id="register-title">Регистрация</h2>
+      <p class="modal-lead">Создайте обычную пользовательскую учётную запись.</p>
+      <form id="registerForm">
+        <label for="registerName">Логин</label>
+        <input id="registerName" name="registerName" type="text" autocomplete="username" minlength="3" maxlength="30" required>
+        <label for="registerPassword">Пароль</label>
+        <input id="registerPassword" name="registerPassword" type="password" autocomplete="new-password" minlength="4" required>
+        <button type="submit">Зарегистрироваться</button>
+        <p id="registerMessage" class="form-message" role="alert"></p>
       </form>
     </section>
   </div>
@@ -516,9 +539,11 @@
     const ADMIN_LOGIN = "trust";
     const ADMIN_PASSWORD = "1488";
     const TICKETS_STORAGE_KEY = "aircheck-admin-tickets";
+    const USERS_STORAGE_KEY = "aircheck-users";
     const ADMIN_SESSION_KEY = "aircheck-admin-session";
+    const USER_SESSION_KEY = "aircheck-current-user";
     const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
-    let adminLoggedIn = false;
+    let currentUser = null;
     let temporaryTickets = {};
 
     function getStorageValue(key) {
@@ -570,6 +595,14 @@
       }
     }
 
+    function getRegisteredUsers() {
+      try {
+        return JSON.parse(getStorageValue(USERS_STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
     function getTickets() {
       return { ...defaultTickets, ...getSavedTickets() };
     }
@@ -582,6 +615,7 @@
     const ticketImage = document.querySelector("#ticketImage");
     const closeModal = document.querySelector(".close-modal");
     const loginButton = document.querySelector("#loginButton");
+    const registerButton = document.querySelector("#registerButton");
     const logoutButton = document.querySelector("#logoutButton");
     const addTicketButton = document.querySelector("#addTicketButton");
     const loginModal = document.querySelector("#loginModal");
@@ -589,6 +623,11 @@
     const loginName = document.querySelector("#loginName");
     const loginPassword = document.querySelector("#loginPassword");
     const loginMessage = document.querySelector("#loginMessage");
+    const registerModal = document.querySelector("#registerModal");
+    const registerForm = document.querySelector("#registerForm");
+    const registerName = document.querySelector("#registerName");
+    const registerPassword = document.querySelector("#registerPassword");
+    const registerMessage = document.querySelector("#registerMessage");
     const addTicketModal = document.querySelector("#addTicketModal");
     const addTicketForm = document.querySelector("#addTicketForm");
     const newTicketNumber = document.querySelector("#newTicketNumber");
@@ -610,15 +649,21 @@
     }
 
     function isAdmin() {
-      return adminLoggedIn;
+      return currentUser?.role === "admin";
     }
 
     function updateAdminControls() {
-      const admin = isAdmin();
-      loginButton.hidden = admin;
-      addTicketButton.hidden = !admin;
-      logoutButton.hidden = !admin;
-      adminStatus.hidden = !admin;
+      const signedIn = currentUser !== null;
+      loginButton.hidden = signedIn;
+      registerButton.hidden = signedIn;
+      addTicketButton.hidden = !isAdmin();
+      logoutButton.hidden = !signedIn;
+      adminStatus.hidden = !signedIn;
+      if (signedIn) {
+        adminStatus.textContent = isAdmin()
+          ? "Вы вошли как администратор"
+          : `Вы вошли как пользователь: ${currentUser.username}`;
+      }
     }
 
     function openLoginModal() {
@@ -631,6 +676,18 @@
 
     function closeLoginModal() {
       setModalState(loginModal, false);
+    }
+
+    function openRegisterModal() {
+      registerForm.reset();
+      registerMessage.textContent = "";
+      registerMessage.className = "form-message";
+      setModalState(registerModal, true);
+      registerName.focus();
+    }
+
+    function closeRegisterModal() {
+      setModalState(registerModal, false);
     }
 
     function openAddTicketModal() {
@@ -699,10 +756,12 @@
     closeModal.addEventListener("click", closeTicketModal);
 
     loginButton.addEventListener("click", openLoginModal);
+    registerButton.addEventListener("click", openRegisterModal);
 
     logoutButton.addEventListener("click", () => {
-      adminLoggedIn = false;
+      currentUser = null;
       removeSessionValue(ADMIN_SESSION_KEY);
+      removeSessionValue(USER_SESSION_KEY);
       closeAddTicketModal();
       updateAdminControls();
     });
@@ -710,14 +769,55 @@
     loginForm.addEventListener("submit", (event) => {
       event.preventDefault();
       if (loginName.value.trim() === ADMIN_LOGIN && loginPassword.value === ADMIN_PASSWORD) {
-        adminLoggedIn = true;
+        currentUser = { username: ADMIN_LOGIN, role: "admin" };
         setSessionValue(ADMIN_SESSION_KEY, "true");
+        setSessionValue(USER_SESSION_KEY, JSON.stringify(currentUser));
+        closeLoginModal();
+        updateAdminControls();
+        return;
+      }
+
+      const user = getRegisteredUsers().find((item) => (
+        item.username === loginName.value.trim() && item.password === loginPassword.value
+      ));
+      if (user) {
+        currentUser = { username: user.username, role: "user" };
+        setSessionValue(USER_SESSION_KEY, JSON.stringify(currentUser));
         closeLoginModal();
         updateAdminControls();
         return;
       }
 
       loginMessage.textContent = "Неверный логин или пароль.";
+    });
+
+    registerForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const username = registerName.value.trim();
+      const password = registerPassword.value;
+      if (!/^[a-zA-Zа-яА-ЯёЁ0-9_-]{3,30}$/.test(username)) {
+        registerMessage.textContent = "Логин: от 3 до 30 букв, цифр, дефиса или подчёркивания.";
+        return;
+      }
+      if (password.length < 4) {
+        registerMessage.textContent = "Пароль должен содержать минимум 4 символа.";
+        return;
+      }
+      if (username === ADMIN_LOGIN || getRegisteredUsers().some((item) => item.username === username)) {
+        registerMessage.textContent = "Этот логин уже занят.";
+        return;
+      }
+
+      const users = getRegisteredUsers();
+      users.push({ username, password });
+      if (!setStorageValue(USERS_STORAGE_KEY, JSON.stringify(users))) {
+        registerMessage.textContent = "Не удалось сохранить учётную запись в этом браузере.";
+        return;
+      }
+      currentUser = { username, role: "user" };
+      setSessionValue(USER_SESSION_KEY, JSON.stringify(currentUser));
+      closeRegisterModal();
+      updateAdminControls();
     });
 
     addTicketForm.addEventListener("submit", (event) => {
@@ -777,6 +877,10 @@
       if (event.target === loginModal) closeLoginModal();
     });
 
+    registerModal.addEventListener("click", (event) => {
+      if (event.target === registerModal) closeRegisterModal();
+    });
+
     addTicketModal.addEventListener("click", (event) => {
       if (event.target === addTicketModal) closeAddTicketModal();
     });
@@ -785,11 +889,18 @@
       if (event.key === "Escape") {
         closeTicketModal();
         closeLoginModal();
+        closeRegisterModal();
         closeAddTicketModal();
       }
     });
 
-    adminLoggedIn = getSessionValue(ADMIN_SESSION_KEY) === "true";
+    try {
+      currentUser = JSON.parse(getSessionValue(USER_SESSION_KEY));
+    } catch {
+      currentUser = getSessionValue(ADMIN_SESSION_KEY) === "true"
+        ? { username: ADMIN_LOGIN, role: "admin" }
+        : null;
+    }
     updateAdminControls();
   </script>
 </body>
