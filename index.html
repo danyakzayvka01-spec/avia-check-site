@@ -24,6 +24,10 @@
       box-sizing: border-box;
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     body {
       min-height: 100vh;
       margin: 0;
@@ -75,6 +79,16 @@
       background: rgba(255, 255, 255, 0.92);
       border: 1px solid var(--line);
       box-shadow: 0 10px 22px rgba(22, 32, 51, 0.12);
+    }
+
+    .admin-status {
+      padding: 10px 12px;
+      color: var(--ok);
+      font-size: 13px;
+      font-weight: 800;
+      background: rgba(234, 248, 239, 0.96);
+      border: 1px solid rgba(17, 122, 72, 0.2);
+      border-radius: 8px;
     }
 
     .shell {
@@ -408,6 +422,7 @@
 </head>
 <body>
   <nav class="top-actions" aria-label="Действия администратора">
+    <span id="adminStatus" class="admin-status" hidden>Вы вошли как администратор</span>
     <button id="loginButton" type="button">Войти</button>
     <button id="addTicketButton" class="add-ticket-button" type="button" hidden>Добавить билет</button>
     <button id="logoutButton" class="logout-button" type="button" hidden>Выйти</button>
@@ -503,12 +518,55 @@
     const TICKETS_STORAGE_KEY = "aircheck-admin-tickets";
     const ADMIN_SESSION_KEY = "aircheck-admin-session";
     const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
+    let adminLoggedIn = false;
+    let temporaryTickets = {};
+
+    function getStorageValue(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+
+    function setStorageValue(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function getSessionValue(key) {
+      try {
+        return sessionStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+
+    function setSessionValue(key, value) {
+      try {
+        sessionStorage.setItem(key, value);
+      } catch {
+        // The in-memory state still keeps the administrator signed in.
+      }
+    }
+
+    function removeSessionValue(key) {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {
+        // Nothing else is needed when browser session storage is unavailable.
+      }
+    }
 
     function getSavedTickets() {
       try {
-        return JSON.parse(localStorage.getItem(TICKETS_STORAGE_KEY)) || {};
+        return { ...temporaryTickets, ...(JSON.parse(getStorageValue(TICKETS_STORAGE_KEY)) || {}) };
       } catch {
-        return {};
+        return temporaryTickets;
       }
     }
 
@@ -536,6 +594,7 @@
     const newTicketNumber = document.querySelector("#newTicketNumber");
     const newTicketImage = document.querySelector("#newTicketImage");
     const addTicketMessage = document.querySelector("#addTicketMessage");
+    const adminStatus = document.querySelector("#adminStatus");
 
     function normalizeTicket(value) {
       return value.trim().replace(/\s+/g, "").toUpperCase();
@@ -551,7 +610,7 @@
     }
 
     function isAdmin() {
-      return sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
+      return adminLoggedIn;
     }
 
     function updateAdminControls() {
@@ -559,6 +618,7 @@
       loginButton.hidden = admin;
       addTicketButton.hidden = !admin;
       logoutButton.hidden = !admin;
+      adminStatus.hidden = !admin;
     }
 
     function openLoginModal() {
@@ -641,7 +701,8 @@
     loginButton.addEventListener("click", openLoginModal);
 
     logoutButton.addEventListener("click", () => {
-      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      adminLoggedIn = false;
+      removeSessionValue(ADMIN_SESSION_KEY);
       closeAddTicketModal();
       updateAdminControls();
     });
@@ -649,7 +710,8 @@
     loginForm.addEventListener("submit", (event) => {
       event.preventDefault();
       if (loginName.value.trim() === ADMIN_LOGIN && loginPassword.value === ADMIN_PASSWORD) {
-        sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
+        adminLoggedIn = true;
+        setSessionValue(ADMIN_SESSION_KEY, "true");
         closeLoginModal();
         updateAdminControls();
         return;
@@ -691,8 +753,11 @@
             status: "Билет найден",
             passenger: "Не указан"
           };
-          localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(savedTickets));
-          addTicketMessage.textContent = `Билет ${ticketNumber} добавлен.`;
+          temporaryTickets = savedTickets;
+          const savedToBrowser = setStorageValue(TICKETS_STORAGE_KEY, JSON.stringify(savedTickets));
+          addTicketMessage.textContent = savedToBrowser
+            ? `Билет ${ticketNumber} добавлен.`
+            : `Билет ${ticketNumber} добавлен до закрытия страницы.`;
           addTicketMessage.className = "form-message success";
           addTicketForm.reset();
         } catch {
@@ -724,6 +789,7 @@
       }
     });
 
+    adminLoggedIn = getSessionValue(ADMIN_SESSION_KEY) === "true";
     updateAdminControls();
   </script>
 </body>
