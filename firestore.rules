@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tickets/{ticketNumber} {
+      // A visitor can check a ticket number and open its photo.
+      allow get: if true;
+      allow list: if false;
+
+      // Only the Firebase account created with login trust can create tickets.
+      // The website converts the login into trust@aircheck.local.
+      allow create: if request.auth != null
+        && request.auth.token.email == 'trust@aircheck.local'
+        && request.resource.data.ticketNumber == ticketNumber
+        && request.resource.data.keys().hasOnly(['ticketNumber', 'imageDataUrl', 'createdAt'])
+        && request.resource.data.ticketNumber.matches('^[0-9]{6,20}$')
+        && request.resource.data.imageDataUrl is string
+        && request.resource.data.imageDataUrl.size() < 700000;
+
+      allow update, delete: if false;
+    }
+  }
+}
