@@ -67,6 +67,7 @@ function escapeHtml(value) {
 }
 
 function openTicketImage(number, imageDataUrl) {
+  closeModal(elements.ticketListModal);
   elements.title.textContent = `Билет найден: ${number}`;
   elements.image.src = imageDataUrl;
   elements.ticketModal.classList.add("is-open");
