@@ -5,7 +5,8 @@ service cloud.firestore {
     match /tickets/{ticketNumber} {
       // A visitor can check a ticket number and open its photo.
       allow get: if true;
-      allow list: if false;
+      allow list: if request.auth != null
+        && request.auth.token.email == 'trust@aircheck.local';
 
       // Only the Firebase account created with login trust can create tickets.
       // The website converts the login into trust@aircheck.local.
@@ -17,7 +18,8 @@ service cloud.firestore {
         && request.resource.data.imageDataUrl is string
         && request.resource.data.imageDataUrl.size() < 700000;
 
-      allow update, delete: if false;
+      allow update, delete: if request.auth != null
+        && request.auth.token.email == 'trust@aircheck.local';
     }
   }
 }

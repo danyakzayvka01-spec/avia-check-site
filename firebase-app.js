@@ -3,7 +3,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 const config = window.AIRCHECK_FIREBASE_CONFIG;
 if (!config?.projectId) throw new Error("Firebase configuration is missing.");
@@ -19,6 +19,7 @@ const elements = {
   loginForm: document.querySelector("#loginForm"), loginName: document.querySelector("#loginName"), loginPassword: document.querySelector("#loginPassword"), loginMessage: document.querySelector("#loginMessage"), loginModal: document.querySelector("#loginModal"),
   registerForm: document.querySelector("#registerForm"), registerName: document.querySelector("#registerName"), registerPassword: document.querySelector("#registerPassword"), registerMessage: document.querySelector("#registerMessage"), registerModal: document.querySelector("#registerModal"),
   addForm: document.querySelector("#addTicketForm"), addNumber: document.querySelector("#newTicketNumber"), addImage: document.querySelector("#newTicketImage"), addMessage: document.querySelector("#addTicketMessage"), addModal: document.querySelector("#addTicketModal"),
+  ticketListButton: document.querySelector("#ticketListButton"), ticketListModal: document.querySelector("#ticketListModal"), ticketList: document.querySelector("#ticketList"), ticketListMessage: document.querySelector("#ticketListMessage"),
   login: document.querySelector("#loginButton"), register: document.querySelector("#registerButton"), add: document.querySelector("#addTicketButton"), logout: document.querySelector("#logoutButton"), status: document.querySelector("#adminStatus")
 };
 
@@ -38,6 +39,7 @@ function updateControls() {
   elements.login.hidden = signedIn;
   elements.register.hidden = signedIn;
   elements.add.hidden = !isAdmin();
+  elements.ticketListButton.hidden = !isAdmin();
   elements.logout.hidden = !signedIn;
   elements.status.hidden = !signedIn;
   if (signedIn) elements.status.textContent = isAdmin() ? "Вы вошли как администратор" : "Вы вошли как пользователь";
@@ -58,6 +60,71 @@ async function findTicket(number) {
   elements.image.src = ticket.imageDataUrl;
   elements.ticketModal.classList.add("is-open");
   elements.ticketModal.setAttribute("aria-hidden", "false");
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
+}
+
+function openTicketImage(number, imageDataUrl) {
+  elements.title.textContent = `Билет найден: ${number}`;
+  elements.image.src = imageDataUrl;
+  elements.ticketModal.classList.add("is-open");
+  elements.ticketModal.setAttribute("aria-hidden", "false");
+}
+
+async function loadTicketList() {
+  if (!isAdmin()) return;
+  setMessage(elements.ticketListMessage, "Загружаю список билетов…");
+  elements.ticketList.innerHTML = "";
+  elements.ticketListModal.classList.add("is-open");
+  elements.ticketListModal.setAttribute("aria-hidden", "false");
+  try {
+    const snapshot = await getDocs(collection(db, "tickets"));
+    const tickets = snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true }));
+    if (!tickets.length) {
+      setMessage(elements.ticketListMessage, "В базе пока нет билетов.");
+      return;
+    }
+    setMessage(elements.ticketListMessage, `Всего билетов: ${tickets.length}`, true);
+    elements.ticketList.innerHTML = tickets.map(ticket => `
+      <article class="ticket-list-item" data-ticket-number="${escapeHtml(ticket.id)}">
+        <img src="${ticket.imageDataUrl}" alt="Фотография билета ${escapeHtml(ticket.id)}">
+        <div><div class="ticket-list-number">Билет № ${escapeHtml(ticket.id)}</div></div>
+        <div class="ticket-list-actions">
+          <button type="button" data-action="view">Открыть фото</button>
+          <button type="button" data-action="edit">Изменить номер</button>
+          <button class="delete-ticket-button" type="button" data-action="delete">Удалить</button>
+        </div>
+      </article>`).join("");
+  } catch (error) {
+    setMessage(elements.ticketListMessage, error.code === "permission-denied" ? "Нет доступа. Опубликуйте обновлённые правила Firestore." : "Не удалось загрузить список билетов.");
+  }
+}
+
+async function manageTicket(action, ticketNumber) {
+  if (!isAdmin()) return;
+  const ticketRef = doc(db, "tickets", ticketNumber);
+  const ticketSnapshot = await getDoc(ticketRef);
+  if (!ticketSnapshot.exists()) { await loadTicketList(); return; }
+  const ticket = ticketSnapshot.data();
+  if (action === "view") { openTicketImage(ticketNumber, ticket.imageDataUrl); return; }
+  if (action === "delete") {
+    if (!window.confirm(`Удалить билет № ${ticketNumber}?`)) return;
+    await deleteDoc(ticketRef);
+    await loadTicketList();
+    return;
+  }
+  const nextNumber = normalizeNumber(window.prompt("Введите новый номер билета:", ticketNumber) || "");
+  if (!nextNumber || nextNumber === ticketNumber) return;
+  if (!isTicketNumber(nextNumber)) { window.alert("Номер билета должен содержать от 6 до 20 цифр."); return; }
+  const nextRef = doc(db, "tickets", nextNumber);
+  if ((await getDoc(nextRef)).exists()) { window.alert("Билет с таким номером уже существует."); return; }
+  const batch = writeBatch(db);
+  batch.set(nextRef, { ticketNumber: nextNumber, imageDataUrl: ticket.imageDataUrl, createdAt: ticket.createdAt || serverTimestamp() });
+  batch.delete(ticketRef);
+  await batch.commit();
+  await loadTicketList();
 }
 
 function compressImage(file) {
@@ -137,11 +204,33 @@ document.addEventListener("submit", async event => {
 }, true);
 
 document.addEventListener("click", async event => {
+  if (event.target.closest("#ticketListButton")) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    await loadTicketList();
+    return;
+  }
+  const ticketAction = event.target.closest("[data-action]");
+  if (ticketAction) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const item = ticketAction.closest("[data-ticket-number]");
+    try {
+      await manageTicket(ticketAction.dataset.action, item.dataset.ticketNumber);
+    } catch (error) {
+      setMessage(elements.ticketListMessage, error.code === "permission-denied" ? "Нет прав на это действие. Обновите правила Firestore." : "Не удалось изменить билет.");
+    }
+    return;
+  }
   if (!event.target.closest("#logoutButton")) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   await signOut(auth);
-  [elements.addModal, elements.loginModal, elements.registerModal].forEach(closeModal);
+  [elements.addModal, elements.loginModal, elements.registerModal, elements.ticketListModal].forEach(closeModal);
 }, true);
+
+elements.ticketListModal.addEventListener("click", event => {
+  if (event.target === elements.ticketListModal) closeModal(elements.ticketListModal);
+});
 
 onAuthStateChanged(auth, user => { currentUser = user; updateControls(); });

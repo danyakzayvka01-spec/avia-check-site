@@ -74,6 +74,10 @@
       background: linear-gradient(135deg, #117a48, #075e34);
     }
 
+    .top-actions .ticket-list-button {
+      background: linear-gradient(135deg, #7043c9, #40208a);
+    }
+
     .top-actions .register-button {
       color: var(--blue-dark);
       background: rgba(255, 255, 255, 0.92);
@@ -356,6 +360,61 @@
       font-weight: 500;
     }
 
+    .ticket-list-window {
+      width: min(100%, 860px);
+      max-height: min(88vh, 760px);
+      overflow: auto;
+    }
+
+    .ticket-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .ticket-list-item {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px;
+      background: #f6f8fb;
+      border: 1px solid rgba(22, 32, 51, 0.12);
+      border-radius: 8px;
+    }
+
+    .ticket-list-item img {
+      width: 84px;
+      height: 64px;
+      object-fit: cover;
+      background: white;
+      border-radius: 6px;
+    }
+
+    .ticket-list-number {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .ticket-list-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: end;
+    }
+
+    .ticket-list-actions button {
+      min-width: 0;
+      height: 38px;
+      padding: 0 12px;
+      font-size: 13px;
+      box-shadow: none;
+    }
+
+    .ticket-list-actions .delete-ticket-button {
+      background: linear-gradient(135deg, #c4372d, #8e1f19);
+    }
+
     .form-message {
       min-height: 20px;
       margin: 4px 0 0;
@@ -424,6 +483,24 @@
       .ticket-meta {
         grid-template-columns: 1fr;
       }
+
+      .ticket-list-item {
+        grid-template-columns: 64px 1fr;
+      }
+
+      .ticket-list-item img {
+        width: 64px;
+        height: 54px;
+      }
+
+      .ticket-list-actions {
+        grid-column: 1 / -1;
+        justify-content: stretch;
+      }
+
+      .ticket-list-actions button {
+        flex: 1;
+      }
     }
   </style>
 </head>
@@ -433,6 +510,7 @@
     <button id="loginButton" type="button">Войти</button>
     <button id="registerButton" class="register-button" type="button" onclick="document.getElementById('loginModal').classList.remove('is-open'); document.getElementById('loginModal').setAttribute('aria-hidden', 'true'); document.getElementById('registerModal').classList.add('is-open'); document.getElementById('registerModal').setAttribute('aria-hidden', 'false');">Регистрация</button>
     <button id="addTicketButton" class="add-ticket-button" type="button" hidden onclick="document.getElementById('addTicketModal').classList.add('is-open'); document.getElementById('addTicketModal').setAttribute('aria-hidden', 'false');">Добавить билет</button>
+    <button id="ticketListButton" class="ticket-list-button" type="button" hidden>Список билетов</button>
     <button id="logoutButton" class="logout-button" type="button" hidden>Выйти</button>
   </nav>
 
@@ -523,6 +601,15 @@
         <button type="submit">Сохранить билет</button>
         <p id="addTicketMessage" class="form-message" role="alert"></p>
       </form>
+    </section>
+  </div>
+
+  <div id="ticketListModal" class="modal" aria-hidden="true">
+    <section class="modal-card ticket-list-window" role="dialog" aria-modal="true" aria-labelledby="ticket-list-title">
+      <h2 id="ticket-list-title">Список билетов</h2>
+      <p class="modal-lead">Просматривайте, переименовывайте или удаляйте добавленные билеты.</p>
+      <p id="ticketListMessage" class="form-message" role="status"></p>
+      <div id="ticketList" class="ticket-list" aria-live="polite"></div>
     </section>
   </div>
 
