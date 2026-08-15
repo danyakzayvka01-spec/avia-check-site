@@ -1,993 +1,119 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Проверка авиабилета</title>
+  <title>COS Number Check</title>
   <style>
-    :root {
-      --ink: #162033;
-      --muted: #627084;
-      --line: rgba(22, 32, 51, 0.16);
-      --blue: #1463d8;
-      --blue-dark: #0d3f91;
-      --ok: #117a48;
-      --ok-bg: #eaf8ef;
-      --bad: #b42318;
-      --bad-bg: #fff0ed;
-      --paper: rgba(255, 255, 255, 0.9);
-      --paper-strong: rgba(255, 255, 255, 0.98);
-      font-family: Inter, "Segoe UI", Arial, sans-serif;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    [hidden] {
-      display: none !important;
-    }
-
-    body {
-      min-height: 100vh;
-      margin: 0;
-      color: var(--ink);
-      background: #dcecf8 url("airplane-hero.png") center / cover no-repeat fixed;
-    }
-
-    body::before {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      content: "";
-      background:
-        linear-gradient(90deg, rgba(244, 249, 255, 0.96) 0%, rgba(244, 249, 255, 0.84) 38%, rgba(244, 249, 255, 0.26) 78%),
-        linear-gradient(180deg, rgba(10, 37, 77, 0.18), rgba(255, 255, 255, 0.1));
-    }
-
-    main {
-      display: grid;
-      min-height: 100vh;
-      place-items: center start;
-      padding: 32px;
-    }
-
-    .top-actions {
-      position: fixed;
-      z-index: 5;
-      top: 20px;
-      right: 24px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .top-actions button {
-      min-width: auto;
-      height: 42px;
-      padding: 0 16px;
-      font-size: 14px;
-      box-shadow: 0 10px 22px rgba(20, 99, 216, 0.2);
-    }
-
-    .top-actions .add-ticket-button {
-      background: linear-gradient(135deg, #117a48, #075e34);
-    }
-
-    .top-actions .ticket-list-button {
-      background: linear-gradient(135deg, #7043c9, #40208a);
-    }
-
-    .top-actions .register-button {
-      color: var(--blue-dark);
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(20, 99, 216, 0.34);
-      box-shadow: 0 10px 22px rgba(22, 32, 51, 0.12);
-    }
-
-    .top-actions .logout-button {
-      color: var(--ink);
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid var(--line);
-      box-shadow: 0 10px 22px rgba(22, 32, 51, 0.12);
-    }
-
-    .admin-status {
-      padding: 10px 12px;
-      color: var(--ok);
-      font-size: 13px;
-      font-weight: 800;
-      background: rgba(234, 248, 239, 0.96);
-      border: 1px solid rgba(17, 122, 72, 0.2);
-      border-radius: 8px;
-    }
-
-    .shell {
-      width: min(100%, 560px);
-    }
-
-    .brand {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 34px;
-      font-weight: 800;
-    }
-
-    .mark {
-      display: grid;
-      width: 44px;
-      height: 44px;
-      place-items: center;
-      color: white;
-      background: var(--blue);
-      border-radius: 8px;
-      box-shadow: 0 16px 36px rgba(20, 99, 216, 0.28);
-    }
-
-    h1 {
-      max-width: 12ch;
-      margin: 0 0 18px;
-      font-size: clamp(42px, 8vw, 76px);
-      line-height: 0.92;
-    }
-
-    .lead {
-      max-width: 480px;
-      margin: 0 0 30px;
-      color: #34445b;
-      font-size: 18px;
-      line-height: 1.6;
-    }
-
-    .checker {
-      width: min(100%, 520px);
-      padding: 20px;
-      background: var(--paper);
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      border-radius: 8px;
-      box-shadow: 0 24px 70px rgba(38, 66, 101, 0.22);
-      backdrop-filter: blur(16px);
-    }
-
-    form {
-      display: grid;
-      gap: 14px;
-    }
-
-    label {
-      color: #2b3850;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-    }
-
-    input {
-      width: 100%;
-      min-width: 0;
-      height: 54px;
-      padding: 0 16px;
-      color: var(--ink);
-      font: inherit;
-      font-size: 16px;
-      font-weight: 650;
-      background: var(--paper-strong);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      outline: none;
-    }
-
-    input:focus {
-      border-color: rgba(20, 99, 216, 0.72);
-      box-shadow: 0 0 0 4px rgba(20, 99, 216, 0.14);
-    }
-
-    button {
-      display: inline-grid;
-      height: 54px;
-      min-width: 148px;
-      padding: 0 22px;
-      place-items: center;
-      color: white;
-      font: inherit;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
-      border: 0;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 14px 28px rgba(20, 99, 216, 0.25);
-    }
-
-    .result {
-      display: none;
-      margin-top: 16px;
-      padding: 16px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-    }
-
-    .result.is-visible {
-      display: grid;
-      gap: 8px;
-    }
-
-    .result strong {
-      font-size: 18px;
-    }
-
-    .result p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .result.found {
-      color: var(--ok);
-      background: var(--ok-bg);
-      border-color: rgba(17, 122, 72, 0.22);
-    }
-
-    .result.missing {
-      color: var(--bad);
-      background: var(--bad-bg);
-      border-color: rgba(180, 35, 24, 0.18);
-    }
-
-    .ticket-meta {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 4px;
-      color: var(--ink);
-    }
-
-    .meta-box {
-      padding: 11px 12px;
-      background: rgba(255, 255, 255, 0.68);
-      border: 1px solid rgba(17, 122, 72, 0.14);
-      border-radius: 8px;
-    }
-
-    .meta-box span {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .meta-box b {
-      display: block;
-      overflow-wrap: anywhere;
-      font-size: 14px;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-      display: none;
-      place-items: center;
-      padding: 24px;
-      background: rgba(8, 18, 33, 0.62);
-      backdrop-filter: blur(10px);
-    }
-
-    .modal.is-open {
-      display: grid;
-    }
-
-    .ticket-window {
-      width: min(100%, 760px);
-      max-height: min(92vh, 920px);
-      overflow: hidden;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 32px 90px rgba(8, 18, 33, 0.38);
-    }
-
-    .ticket-window header {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(22, 32, 51, 0.12);
-    }
-
-    .ticket-window h2 {
-      margin: 0;
-      font-size: 17px;
-      line-height: 1.25;
-    }
-
-    .close-modal {
-      width: 40px;
-      min-width: 40px;
-      height: 40px;
-      padding: 0;
-      color: var(--ink);
-      background: #f0f4f8;
-      border: 1px solid rgba(22, 32, 51, 0.12);
-      box-shadow: none;
-    }
-
-    .ticket-frame {
-      max-height: calc(min(92vh, 920px) - 69px);
-      overflow: auto;
-      background: #f6f8fb;
-    }
-
-    .ticket-frame img {
-      display: block;
-      width: 100%;
-      height: auto;
-      background: white;
-    }
-
-    .modal-card {
-      width: min(100%, 440px);
-      padding: 24px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 32px 90px rgba(8, 18, 33, 0.38);
-    }
-
-    .modal-card h2 {
-      margin: 0 0 8px;
-      font-size: 24px;
-    }
-
-    .modal-card .modal-lead {
-      margin: 0 0 20px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .modal-card form {
-      gap: 12px;
-    }
-
-    .modal-card input[type="file"] {
-      height: auto;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    .ticket-list-window {
-      width: min(100%, 860px);
-      max-height: min(88vh, 760px);
-      overflow: auto;
-    }
-
-    .ticket-list {
-      display: grid;
-      gap: 12px;
-      margin-top: 18px;
-    }
-
-    .ticket-list-item {
-      display: grid;
-      grid-template-columns: 84px minmax(0, 1fr) auto;
-      gap: 14px;
-      align-items: center;
-      padding: 12px;
-      background: #f6f8fb;
-      border: 1px solid rgba(22, 32, 51, 0.12);
-      border-radius: 8px;
-    }
-
-    .ticket-list-item img {
-      width: 84px;
-      height: 64px;
-      object-fit: cover;
-      background: white;
-      border-radius: 6px;
-    }
-
-    .ticket-list-number {
-      font-size: 16px;
-      font-weight: 800;
-    }
-
-    .ticket-list-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: end;
-    }
-
-    .ticket-list-actions button {
-      min-width: 0;
-      height: 38px;
-      padding: 0 12px;
-      font-size: 13px;
-      box-shadow: none;
-    }
-
-    .ticket-list-actions .delete-ticket-button {
-      background: linear-gradient(135deg, #c4372d, #8e1f19);
-    }
-
-    .form-message {
-      min-height: 20px;
-      margin: 4px 0 0;
-      color: var(--bad);
-      font-size: 14px;
-      line-height: 1.4;
-    }
-
-    .form-message.success {
-      color: var(--ok);
-    }
-
-    .foot {
-      margin-top: 14px;
-      color: rgba(43, 56, 80, 0.78);
-      font-size: 13px;
-    }
-
-    @media (max-width: 680px) {
-      body {
-        background-position: 62% center;
-      }
-
-      body::before {
-        background:
-          linear-gradient(180deg, rgba(244, 249, 255, 0.95) 0%, rgba(244, 249, 255, 0.88) 48%, rgba(244, 249, 255, 0.52) 100%),
-          linear-gradient(180deg, rgba(10, 37, 77, 0.16), rgba(255, 255, 255, 0.1));
-      }
-
-      main {
-        align-items: start;
-        padding: 24px 16px;
-      }
-
-      .top-actions {
-        top: 12px;
-        right: 16px;
-      }
-
-      .top-actions button {
-        height: 38px;
-        padding: 0 12px;
-      }
-
-      h1 {
-        max-width: 10ch;
-        font-size: 48px;
-      }
-
-      .lead {
-        font-size: 16px;
-      }
-
-      .checker {
-        padding: 16px;
-      }
-
-      .row {
-        grid-template-columns: 1fr;
-      }
-
-      button {
-        width: 100%;
-      }
-
-      .ticket-meta {
-        grid-template-columns: 1fr;
-      }
-
-      .ticket-list-item {
-        grid-template-columns: 64px 1fr;
-      }
-
-      .ticket-list-item img {
-        width: 64px;
-        height: 54px;
-      }
-
-      .ticket-list-actions {
-        grid-column: 1 / -1;
-        justify-content: stretch;
-      }
-
-      .ticket-list-actions button {
-        flex: 1;
-      }
-    }
+    :root { --navy:#061a33; --royal:#0b3a82; --red:#c8102e; --cream:#f7f2e8; --gold:#c7a44b; --ink:#11243e; --green:#17643e; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,Arial,sans-serif; color:var(--ink); background:var(--cream); }
+    .topline { height:7px; background:linear-gradient(90deg,var(--red) 0 25%,#fff 25% 31%,var(--royal) 31% 69%,#fff 69% 75%,var(--red) 75%); }
+    header { background:var(--navy); color:#fff; padding:20px clamp(20px,6vw,90px); display:flex; justify-content:space-between; align-items:center; gap:20px; }
+    .brand { font-family:Georgia,serif; font-size:23px; letter-spacing:.4px; display:flex; align-items:center; gap:12px; }
+    .crest { width:37px; height:37px; border:1px solid var(--gold); border-radius:50%; display:grid; place-items:center; color:var(--gold); font-size:19px; }
+    nav { display:flex; gap:10px; align-items:center; }
+    .btn { border:1px solid transparent; border-radius:3px; padding:11px 18px; background:var(--red); color:#fff; font-weight:700; cursor:pointer; font-size:14px; }
+    .btn.secondary { background:transparent; border-color:#91a3ba; }
+    .btn.gold { background:var(--gold); color:#07172e; }
+    .btn:disabled { cursor:wait; opacity:.68; }
+    .btn:hover:not(:disabled) { filter:brightness(1.1); }
+    .profile { display:none; align-items:center; gap:10px; font-size:14px; }
+    .profile.show { display:flex; }
+    .profile-icon { width:36px; height:36px; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:var(--navy); font-weight:800; font-size:15px; }
+    .profile small { display:block; color:#b7c7da; margin-top:2px; }
+    main { min-height:calc(100vh - 84px); background:linear-gradient(90deg,rgba(6,26,51,.91),rgba(6,26,51,.66)),url('https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1800&q=80') center/cover; padding:clamp(55px,10vw,130px) clamp(20px,8vw,130px); }
+    .hero { max-width:750px; color:#fff; }
+    .eyebrow { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#f0d47c; font-weight:800; }
+    .hero h1 { font-family:Georgia,serif; font-size:clamp(42px,6vw,72px); line-height:1.05; margin:14px 0; }
+    .hero p { font-size:18px; line-height:1.6; color:#e5ebf4; max-width:650px; }
+    .lookup { margin-top:34px; background:#fff; padding:24px; border-left:5px solid var(--red); box-shadow:0 18px 45px #020b18a3; color:var(--ink); max-width:690px; }
+    .lookup label { font-weight:800; display:block; margin-bottom:10px; }
+    .fieldrow { display:flex; gap:10px; }
+    .fieldrow input { flex:1; border:1px solid #b9c5d2; border-radius:3px; padding:14px; font-size:16px; text-transform:uppercase; }
+    .sync-status { font-size:12px; color:#617087; margin:12px 0 0; }
+    .sync-status.error { color:#a3152e; }
+    .sync-status.ready { color:var(--green); }
+    .result { display:none; max-width:690px; background:#fff; margin-top:22px; padding:24px; box-shadow:0 10px 30px #020b1870; color:var(--ink); }
+    .result.show { display:block; }
+    .result-grid { display:grid; grid-template-columns:130px 1fr; gap:22px; align-items:start; }
+    .result-grid.public { grid-template-columns:1fr; }
+    .photo { width:130px; height:165px; border:1px solid #cbd4df; object-fit:cover; background:#edf2f7; }
+    .tag { background:#e2f1e7; color:var(--green); padding:6px 9px; font-weight:800; font-size:12px; border-radius:2px; display:inline-block; }
+    .details h2 { margin:12px 0 4px; font-family:Georgia,serif; }
+    .details dl { display:grid; grid-template-columns:115px 1fr; gap:9px; margin:17px 0 0; font-size:14px; }
+    .details dt { color:#66758a; }
+    .details dd { margin:0; font-weight:700; }
+    .error { display:none; color:#a3152e; font-size:14px; margin-top:13px; }
+    .error.show { display:block; }
+    dialog { border:0; padding:0; border-radius:5px; box-shadow:0 20px 70px #0009; width:min(520px,calc(100% - 32px)); }
+    dialog::backdrop { background:#061a33bb; }
+    .modal { padding:28px; }
+    .modal h2 { font-family:Georgia,serif; margin:0 0 8px; }
+    .modal p { color:#526277; line-height:1.5; }
+    .modal label { display:block; font-size:13px; font-weight:800; margin-top:15px; }
+    .modal input { margin-top:6px; width:100%; padding:11px; border:1px solid #c6d0dd; border-radius:3px; }
+    .modal footer { display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+    .adminbar { display:none; position:fixed; bottom:20px; right:20px; background:var(--navy); padding:12px; color:#fff; box-shadow:0 8px 30px #0007; }
+    .adminbar.show { display:flex; gap:12px; align-items:center; }
+    .upload-preview { display:none; width:70px; height:90px; object-fit:cover; margin-top:10px; border:1px solid #ccd; }
+    .upload-preview.show { display:block; }
+    footer { background:#061a33; color:#b7c7da; padding:22px clamp(20px,6vw,90px); font-size:13px; display:flex; justify-content:space-between; gap:20px; }
+    @media(max-width:600px) { header { align-items:flex-start; flex-direction:column; } .fieldrow { flex-direction:column; } .result-grid { grid-template-columns:1fr; } .photo { width:105px; height:135px; } footer { flex-direction:column; } nav { width:100%; justify-content:flex-end; } }
   </style>
 </head>
 <body>
-  <nav class="top-actions" aria-label="Действия администратора">
-    <span id="adminStatus" class="admin-status" hidden></span>
-    <button id="loginButton" type="button">Войти</button>
-    <button id="registerButton" class="register-button" type="button" onclick="document.getElementById('loginModal').classList.remove('is-open'); document.getElementById('loginModal').setAttribute('aria-hidden', 'true'); document.getElementById('registerModal').classList.add('is-open'); document.getElementById('registerModal').setAttribute('aria-hidden', 'false');">Регистрация</button>
-    <button id="addTicketButton" class="add-ticket-button" type="button" hidden onclick="document.getElementById('addTicketModal').classList.add('is-open'); document.getElementById('addTicketModal').setAttribute('aria-hidden', 'false');">Добавить билет</button>
-    <button id="ticketListButton" class="ticket-list-button" type="button" hidden>Список билетов</button>
-    <button id="logoutButton" class="logout-button" type="button" hidden>Выйти</button>
-  </nav>
-
+  <div class="topline"></div>
+  <header>
+    <div class="brand"><span class="crest">C</span>COS Number Check</div>
+    <nav id="guestNav">
+      <button class="btn secondary" onclick="openModal('login')">Sign in</button>
+      <button class="btn" onclick="openModal('register')">Register</button>
+    </nav>
+    <div id="profile" class="profile">
+      <span class="profile-icon">A</span>
+      <span><strong id="profileName">Administrator</strong><small>Administrator</small></span>
+      <button class="btn secondary" onclick="logout()">Sign out</button>
+    </div>
+  </header>
   <main>
-    <section class="shell" aria-labelledby="page-title">
-      <div class="brand" aria-label="AirCheck">
-        <span class="mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="25" height="25" fill="none">
-            <path d="M3 13.5 21 4l-5.2 16-4.3-6.2L5.2 17 3 13.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-          </svg>
-        </span>
-        <span>AirCheck</span>
+    <section class="hero">
+      <div class="eyebrow">City of London - Verification portal</div>
+      <h1>COS Number Check</h1>
+      <p>Enter your Certificate of Sponsorship number to view the application registration status.</p>
+      <div class="lookup">
+        <label for="cos">COS number</label>
+        <div class="fieldrow"><input id="cos" placeholder="COS number" maxlength="10" autocomplete="off"><button class="btn" onclick="lookup()">Check status</button></div>
+        <div id="error" class="error" role="alert">No record found.</div>
+        <div id="syncStatus" class="sync-status" aria-live="polite">Connecting to record storage...</div>
       </div>
-
-      <h1 id="page-title">Проверка авиабилета</h1>
-      <p class="lead">Введите номер билета, чтобы увидеть статус регистрации в базе бронирования.</p>
-
-      <div class="checker">
-        <form id="ticketForm" novalidate>
-          <label for="ticketNumber">Номер билета</label>
-          <div class="row">
-            <input id="ticketNumber" name="ticketNumber" type="text" autocomplete="off" placeholder="Введите номер билета" required>
-            <button type="submit">Проверить</button>
-          </div>
-        </form>
-
-        <div id="result" class="result" role="status" aria-live="polite"></div>
-        <div class="foot">Статус показывается только для заданных номеров билетов.</div>
-      </div>
+      <article id="result" class="result" aria-live="polite">
+        <div id="resultGrid" class="result-grid">
+          <img id="recordPhoto" class="photo" alt="Record photo" hidden>
+          <div class="details"><span id="recordTag" class="tag">REGISTERED</span><h2 id="recordName">Registration record</h2><dl><dt>COS number</dt><dd id="recordCos"></dd><dt>Status</dt><dd id="recordStatus">Registered</dd></dl></div>
+        </div>
+      </article>
     </section>
   </main>
-
-  <div id="ticketModal" class="modal" aria-hidden="true">
-    <section class="ticket-window" role="dialog" aria-modal="true" aria-labelledby="ticket-title">
-      <header>
-        <h2 id="ticket-title">Билет найден</h2>
-        <button class="close-modal" type="button" aria-label="Закрыть билет" title="Закрыть билет">
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </header>
-      <div class="ticket-frame">
-        <img id="ticketImage" src="" alt="Фотография найденного авиабилета">
-      </div>
-    </section>
-  </div>
-
-  <div id="loginModal" class="modal" aria-hidden="true">
-    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title">
-      <h2 id="login-title">Вход</h2>
-      <p class="modal-lead">Войдите как пользователь или администратор.</p>
-      <form id="loginForm">
-        <label for="loginName">Логин</label>
-        <input id="loginName" name="loginName" type="text" autocomplete="username" required>
-        <label for="loginPassword">Пароль</label>
-        <input id="loginPassword" name="loginPassword" type="password" autocomplete="current-password" required>
-        <button type="submit">Войти</button>
-        <p id="loginMessage" class="form-message" role="alert"></p>
-      </form>
-    </section>
-  </div>
-
-  <div id="registerModal" class="modal" aria-hidden="true">
-    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="register-title">
-      <h2 id="register-title">Регистрация</h2>
-      <p class="modal-lead">Создайте обычную пользовательскую учётную запись.</p>
-      <form id="registerForm">
-        <label for="registerName">Логин</label>
-        <input id="registerName" name="registerName" type="text" autocomplete="username" minlength="3" maxlength="30" required>
-        <label for="registerPassword">Пароль</label>
-        <input id="registerPassword" name="registerPassword" type="password" autocomplete="new-password" minlength="4" required>
-        <button type="submit">Зарегистрироваться</button>
-        <p id="registerMessage" class="form-message" role="alert"></p>
-      </form>
-    </section>
-  </div>
-
-  <div id="addTicketModal" class="modal" aria-hidden="true">
-    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="add-ticket-title">
-      <h2 id="add-ticket-title">Добавить билет</h2>
-      <p class="modal-lead">Новый билет сохранится только в этом браузере.</p>
-      <form id="addTicketForm">
-        <label for="newTicketNumber">Номер билета</label>
-        <input id="newTicketNumber" name="newTicketNumber" type="text" inputmode="numeric" autocomplete="off" placeholder="Например, 160459290045" required>
-        <label for="newTicketImage">Фотография билета</label>
-        <input id="newTicketImage" name="newTicketImage" type="file" accept="image/jpeg,image/png,image/webp" required>
-        <button type="submit">Сохранить билет</button>
-        <p id="addTicketMessage" class="form-message" role="alert"></p>
-      </form>
-    </section>
-  </div>
-
-  <div id="ticketListModal" class="modal" aria-hidden="true">
-    <section class="modal-card ticket-list-window" role="dialog" aria-modal="true" aria-labelledby="ticket-list-title">
-      <h2 id="ticket-list-title">Список билетов</h2>
-      <p class="modal-lead">Просматривайте, переименовывайте или удаляйте добавленные билеты.</p>
-      <p id="ticketListMessage" class="form-message" role="status"></p>
-      <div id="ticketList" class="ticket-list" aria-live="polite"></div>
-    </section>
-  </div>
-
-  <script>
-    const defaultTickets = {
-      "160459290045": {
-        image: "ticket-160459290045.jpg",
-        route: "Москва -> Стамбул -> Манчестер",
-        status: "Билет найден",
-        passenger: "SYLKINA SVETLANA"
-      }
-    };
-
-    const ADMIN_LOGIN = "trust";
-    const ADMIN_PASSWORD = "1488";
-    const TICKETS_STORAGE_KEY = "aircheck-admin-tickets";
-    const USERS_STORAGE_KEY = "aircheck-users";
-    const ADMIN_SESSION_KEY = "aircheck-admin-session";
-    const USER_SESSION_KEY = "aircheck-current-user";
-    const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
-    let currentUser = null;
-    let temporaryTickets = {};
-
-    function getStorageValue(key) {
-      try {
-        return localStorage.getItem(key);
-      } catch {
-        return null;
-      }
-    }
-
-    function setStorageValue(key, value) {
-      try {
-        localStorage.setItem(key, value);
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    function getSessionValue(key) {
-      try {
-        return sessionStorage.getItem(key);
-      } catch {
-        return null;
-      }
-    }
-
-    function setSessionValue(key, value) {
-      try {
-        sessionStorage.setItem(key, value);
-      } catch {
-        // The in-memory state still keeps the administrator signed in.
-      }
-    }
-
-    function removeSessionValue(key) {
-      try {
-        sessionStorage.removeItem(key);
-      } catch {
-        // Nothing else is needed when browser session storage is unavailable.
-      }
-    }
-
-    function getSavedTickets() {
-      try {
-        return { ...temporaryTickets, ...(JSON.parse(getStorageValue(TICKETS_STORAGE_KEY)) || {}) };
-      } catch {
-        return temporaryTickets;
-      }
-    }
-
-    function getRegisteredUsers() {
-      try {
-        return JSON.parse(getStorageValue(USERS_STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
-    }
-
-    function getTickets() {
-      return { ...defaultTickets, ...getSavedTickets() };
-    }
-
-    const form = document.querySelector("#ticketForm");
-    const input = document.querySelector("#ticketNumber");
-    const result = document.querySelector("#result");
-    const ticketModal = document.querySelector("#ticketModal");
-    const ticketTitle = document.querySelector("#ticket-title");
-    const ticketImage = document.querySelector("#ticketImage");
-    const closeModal = document.querySelector(".close-modal");
-    const loginButton = document.querySelector("#loginButton");
-    const registerButton = document.querySelector("#registerButton");
-    const logoutButton = document.querySelector("#logoutButton");
-    const addTicketButton = document.querySelector("#addTicketButton");
-    const loginModal = document.querySelector("#loginModal");
-    const loginForm = document.querySelector("#loginForm");
-    const loginName = document.querySelector("#loginName");
-    const loginPassword = document.querySelector("#loginPassword");
-    const loginMessage = document.querySelector("#loginMessage");
-    const registerModal = document.querySelector("#registerModal");
-    const registerForm = document.querySelector("#registerForm");
-    const registerName = document.querySelector("#registerName");
-    const registerPassword = document.querySelector("#registerPassword");
-    const registerMessage = document.querySelector("#registerMessage");
-    const addTicketModal = document.querySelector("#addTicketModal");
-    const addTicketForm = document.querySelector("#addTicketForm");
-    const newTicketNumber = document.querySelector("#newTicketNumber");
-    const newTicketImage = document.querySelector("#newTicketImage");
-    const addTicketMessage = document.querySelector("#addTicketMessage");
-    const adminStatus = document.querySelector("#adminStatus");
-
-    function normalizeTicket(value) {
-      return value.trim().replace(/\s+/g, "").toUpperCase();
-    }
-
-    function isValidTicketNumber(value) {
-      return /^\d{6,20}$/.test(value);
-    }
-
-    function setModalState(modal, isOpen) {
-      modal.classList.toggle("is-open", isOpen);
-      modal.setAttribute("aria-hidden", String(!isOpen));
-    }
-
-    function isAdmin() {
-      return currentUser?.role === "admin";
-    }
-
-    function updateAdminControls() {
-      const signedIn = currentUser !== null;
-      loginButton.hidden = signedIn;
-      registerButton.hidden = signedIn;
-      addTicketButton.hidden = !isAdmin();
-      logoutButton.hidden = !signedIn;
-      adminStatus.hidden = !signedIn;
-      if (signedIn) {
-        adminStatus.textContent = isAdmin()
-          ? "Вы вошли как администратор"
-          : `Вы вошли как пользователь: ${currentUser.username}`;
-      }
-    }
-
-    function openLoginModal() {
-      closeRegisterModal();
-      loginForm.reset();
-      loginMessage.textContent = "";
-      loginMessage.className = "form-message";
-      setModalState(loginModal, true);
-      loginName.focus();
-    }
-
-    function closeLoginModal() {
-      setModalState(loginModal, false);
-    }
-
-    function openRegisterModal() {
-      closeLoginModal();
-      registerForm.reset();
-      registerMessage.textContent = "";
-      registerMessage.className = "form-message";
-      setModalState(registerModal, true);
-      registerName.focus();
-    }
-
-    function closeRegisterModal() {
-      setModalState(registerModal, false);
-    }
-
-    function openAddTicketModal() {
-      if (!isAdmin()) return;
-      addTicketForm.reset();
-      addTicketMessage.textContent = "";
-      addTicketMessage.className = "form-message";
-      setModalState(addTicketModal, true);
-      newTicketNumber.focus();
-    }
-
-    function closeAddTicketModal() {
-      setModalState(addTicketModal, false);
-    }
-
-    function openTicketModal(ticketNumber, ticket) {
-      ticketTitle.textContent = `Билет найден: ${ticketNumber}`;
-      ticketImage.src = ticket.image;
-      setModalState(ticketModal, true);
-      closeModal.focus();
-    }
-
-    function closeTicketModal() {
-      setModalState(ticketModal, false);
-    }
-
-    function renderFound(ticketNumber, ticket) {
-      result.className = "result found is-visible";
-      result.innerHTML = `
-        <strong>Билет найден</strong>
-        <p>Номер ${ticketNumber} есть в системе.</p>
-      `;
-      openTicketModal(ticketNumber, ticket);
-    }
-
-    function renderMissing(ticketNumber) {
-      result.className = "result missing is-visible";
-      result.innerHTML = `
-        <strong>Билет не найден</strong>
-        <p>Номер ${ticketNumber || "не указан"} отсутствует в системе.</p>
-      `;
-      closeTicketModal();
-    }
-
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const enteredTicket = normalizeTicket(input.value);
-      if (!isValidTicketNumber(enteredTicket)) {
-        renderMissing("");
-        return;
-      }
-      const ticket = getTickets()[enteredTicket];
-
-      if (ticket) {
-        renderFound(enteredTicket, ticket);
-      } else {
-        renderMissing(input.value.trim());
-      }
-    });
-
-    closeModal.addEventListener("click", closeTicketModal);
-
-    loginButton.addEventListener("click", openLoginModal);
-    registerButton.addEventListener("click", openRegisterModal);
-
-    logoutButton.addEventListener("click", () => {
-      currentUser = null;
-      removeSessionValue(ADMIN_SESSION_KEY);
-      removeSessionValue(USER_SESSION_KEY);
-      closeAddTicketModal();
-      updateAdminControls();
-    });
-
-    loginForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (loginName.value.trim() === ADMIN_LOGIN && loginPassword.value === ADMIN_PASSWORD) {
-        currentUser = { username: ADMIN_LOGIN, role: "admin" };
-        setSessionValue(ADMIN_SESSION_KEY, "true");
-        setSessionValue(USER_SESSION_KEY, JSON.stringify(currentUser));
-        closeLoginModal();
-        updateAdminControls();
-        return;
-      }
-
-      const user = getRegisteredUsers().find((item) => (
-        item.username === loginName.value.trim() && item.password === loginPassword.value
-      ));
-      if (user) {
-        currentUser = { username: user.username, role: "user" };
-        setSessionValue(USER_SESSION_KEY, JSON.stringify(currentUser));
-        closeLoginModal();
-        updateAdminControls();
-        return;
-      }
-
-      loginMessage.textContent = "Неверный логин или пароль.";
-    });
-
-    registerForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const username = registerName.value.trim();
-      const password = registerPassword.value;
-      if (!/^[a-zA-Zа-яА-ЯёЁ0-9_-]{3,30}$/.test(username)) {
-        registerMessage.textContent = "Логин: от 3 до 30 букв, цифр, дефиса или подчёркивания.";
-        return;
-      }
-      if (password.length < 4) {
-        registerMessage.textContent = "Пароль должен содержать минимум 4 символа.";
-        return;
-      }
-      if (username === ADMIN_LOGIN || getRegisteredUsers().some((item) => item.username === username)) {
-        registerMessage.textContent = "Этот логин уже занят.";
-        return;
-      }
-
-      const users = getRegisteredUsers();
-      users.push({ username, password });
-      if (!setStorageValue(USERS_STORAGE_KEY, JSON.stringify(users))) {
-        registerMessage.textContent = "Не удалось сохранить учётную запись в этом браузере.";
-        return;
-      }
-      currentUser = { username, role: "user" };
-      setSessionValue(USER_SESSION_KEY, JSON.stringify(currentUser));
-      closeRegisterModal();
-      updateAdminControls();
-    });
-
-    addTicketForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (!isAdmin()) return;
-
-      const ticketNumber = normalizeTicket(newTicketNumber.value);
-      const imageFile = newTicketImage.files[0];
-      if (!ticketNumber || !imageFile) {
-        addTicketMessage.textContent = "Укажите номер билета и выберите фотографию.";
-        return;
-      }
-      if (!isValidTicketNumber(ticketNumber)) {
-        addTicketMessage.textContent = "Номер билета должен содержать от 6 до 20 цифр.";
-        return;
-      }
-      if (imageFile.size > MAX_IMAGE_SIZE) {
-        addTicketMessage.textContent = "Размер фотографии не должен превышать 3 МБ.";
-        return;
-      }
-      if (getTickets()[ticketNumber]) {
-        addTicketMessage.textContent = "Билет с таким номером уже существует.";
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.addEventListener("load", () => {
-        try {
-          const savedTickets = getSavedTickets();
-          savedTickets[ticketNumber] = {
-            image: reader.result,
-            route: "Добавлен администратором",
-            status: "Билет найден",
-            passenger: "Не указан"
-          };
-          temporaryTickets = savedTickets;
-          const savedToBrowser = setStorageValue(TICKETS_STORAGE_KEY, JSON.stringify(savedTickets));
-          addTicketMessage.textContent = savedToBrowser
-            ? `Билет ${ticketNumber} добавлен.`
-            : `Билет ${ticketNumber} добавлен до закрытия страницы.`;
-          addTicketMessage.className = "form-message success";
-          addTicketForm.reset();
-        } catch {
-          addTicketMessage.textContent = "Не удалось сохранить билет. Попробуйте файл меньшего размера.";
-        }
-      });
-      reader.readAsDataURL(imageFile);
-    });
-
-    ticketModal.addEventListener("click", (event) => {
-      if (event.target === ticketModal) {
-        closeTicketModal();
-      }
-    });
-
-    loginModal.addEventListener("click", (event) => {
-      if (event.target === loginModal) closeLoginModal();
-    });
-
-    registerModal.addEventListener("click", (event) => {
-      if (event.target === registerModal) closeRegisterModal();
-    });
-
-    addTicketModal.addEventListener("click", (event) => {
-      if (event.target === addTicketModal) closeAddTicketModal();
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        closeTicketModal();
-        closeLoginModal();
-        closeRegisterModal();
-        closeAddTicketModal();
-      }
-    });
-
-    try {
-      currentUser = JSON.parse(getSessionValue(USER_SESSION_KEY));
-    } catch {
-      currentUser = getSessionValue(ADMIN_SESSION_KEY) === "true"
-        ? { username: ADMIN_LOGIN, role: "admin" }
-        : null;
-    }
-    updateAdminControls();
-  </script>
-  <script src="firebase-config.js"></script>
-  <script type="module" src="firebase-app.js"></script>
+  <footer><span>Copyright 2026 COS Number Check</span><span>Designed in London</span></footer>
+  <aside id="adminbar" class="adminbar"><span>Administrator mode</span><button class="btn gold" onclick="openModal('add')">+ Add COS</button><button class="btn secondary" onclick="logout()">Sign out</button></aside>
+  <dialog id="login">
+    <form method="dialog" class="modal" onsubmit="signIn(); return false;">
+      <h2>Administrator sign in</h2><p>Use your Firebase administrator account.</p>
+      <label>Username or email<input id="loginName" required autocomplete="username"></label><label>Password<input id="loginPass" type="password" required autocomplete="current-password"></label>
+      <div id="loginError" class="error">Invalid administrator credentials.</div>
+      <footer><button class="btn secondary" value="cancel">Cancel</button><button class="btn" type="submit">Sign in</button></footer>
+    </form>
+  </dialog>
+  <dialog id="register"><form method="dialog" class="modal"><h2>Registration</h2><p>Registration is managed by the site administrator.</p><footer><button class="btn" value="close">Close</button></footer></form></dialog>
+  <dialog id="add">
+    <form method="dialog" class="modal" onsubmit="addRecord(); return false;">
+      <h2>Add record</h2><p>Records are shared through Firebase. A small test avatar is stored with the private record; do not add real passport photographs or identifiers.</p>
+      <label>COS number<input id="newCos" required maxlength="10" autocomplete="off"></label><label>Full name<input id="newName" required></label><label>Photo<input id="newPhoto" type="file" accept="image/*" onchange="preview(this)" required></label>
+      <img id="preview" class="upload-preview" alt="Preview"><footer><button class="btn secondary" type="button" onclick="document.getElementById('add').close()">Cancel</button><button id="saveRecord" class="btn" type="submit">Save record</button></footer>
+    </form>
+  </dialog>
+  <script src="./firebase-config.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
