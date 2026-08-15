@@ -1,11 +1,10 @@
-// Firebase Web configuration for COS Number Check.
-// This configuration is intended for browser use; do not put a service-account key here.
-window.COS_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDZ6xSl2URl8k2SDOuyVhMOvf_QQmrh85Q",
-  authDomain: "uk-visa-c64c8.firebaseapp.com",
-  projectId: "uk-visa-c64c8",
-  storageBucket: "uk-visa-c64c8.firebasestorage.app",
-  messagingSenderId: "723643621281",
-  appId: "1:723643621281:web:782112378bc551b47275e0",
-  measurementId: "G-RBEDXQWSDJ"
+// Firebase Web configuration. This API key is public by design;
+// access to data is protected by the Firestore Rules file in this project.
+window.AIRCHECK_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAZHcB4sXxHAVp63aTRH78odelqRJYbkns",
+  authDomain: "gang-d1262.firebaseapp.com",
+  projectId: "gang-d1262",
+  storageBucket: "gang-d1262.firebasestorage.app",
+  messagingSenderId: "174006218398",
+  appId: "1:174006218398:web:57f0b2c2da861469f5558f"
 };
