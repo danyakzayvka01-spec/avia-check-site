@@ -11,7 +11,7 @@ if (!config?.projectId) throw new Error("Firebase configuration is missing.");
 const app = initializeApp(config);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const ADMIN_EMAIL = "trust@aircheck.local";
+const ADMIN_EMAIL = "admin@aircheck.local";
 const MAX_DATA_URL_LENGTH = 650000;
 const elements = {
   form: document.querySelector("#ticketForm"), input: document.querySelector("#ticketNumber"), result: document.querySelector("#result"),
