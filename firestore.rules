@@ -6,12 +6,12 @@ service cloud.firestore {
       // A visitor can check a ticket number and open its photo.
       allow get: if true;
       allow list: if request.auth != null
-        && request.auth.token.email == 'trust@aircheck.local';
+        && request.auth.token.email == 'admin@aircheck.local';
 
       // Only the Firebase account created with login trust can create tickets.
       // The website converts the login into trust@aircheck.local.
       allow create: if request.auth != null
-        && request.auth.token.email == 'trust@aircheck.local'
+        && request.auth.token.email == 'admin@aircheck.local'
         && request.resource.data.ticketNumber == ticketNumber
         && request.resource.data.keys().hasOnly(['ticketNumber', 'imageDataUrl', 'createdAt'])
         && request.resource.data.ticketNumber.matches('^[0-9]{6,20}$')
@@ -19,7 +19,7 @@ service cloud.firestore {
         && request.resource.data.imageDataUrl.size() < 700000;
 
       allow update, delete: if request.auth != null
-        && request.auth.token.email == 'trust@aircheck.local';
+        && request.auth.token.email == 'admin@aircheck.local';
     }
   }
 }
